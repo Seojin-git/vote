@@ -1,3 +1,21 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+// Firebase configuration
+const firebaseConfig = {
+    apiKey: "your-api-key",
+    authDomain: "your-app.firebaseapp.com",
+    databaseURL: "https://your-database.firebaseio.com",
+    projectId: "your-project-id",
+    storageBucket: "your-storage-bucket",
+    messagingSenderId: "your-messaging-sender-id",
+    appId: "your-app-id"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 const yesButton = document.getElementById("yes-button");
 const noButton = document.getElementById("no-button");
 const loginButton = document.getElementById("login-button");
@@ -7,41 +25,38 @@ const adminSection = document.getElementById("admin-section");
 
 const password = "05190519";
 
+// Reference to the database
+const votesRef = ref(db, "votes");
+
+// Initialize votes
 let votes = {
     agree: 0,
     disagree: 0
 };
 
-// Load votes from JSON file
-fetch("votes.json")
-    .then((response) => response.json())
-    .then((data) => {
-        votes = data;
-    })
-    .catch(() => {
-        console.error("Could not load votes.json. Using default values.");
-    });
+// Sync votes from Firebase in real-time
+onValue(votesRef, (snapshot) => {
+    const data = snapshot.val();
+    votes = data || { agree: 0, disagree: 0 };
+    resultsSection.textContent = `Agree: ${votes.agree}, Disagree: ${votes.disagree}`;
+});
 
-// Save votes to JSON file
-function saveVotes() {
-    const blob = new Blob([JSON.stringify(votes, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "votes.json";
-    a.click();
+// Update votes in Firebase
+function updateVotes() {
+    update(votesRef, votes);
 }
 
 // Handle vote buttons
 yesButton.addEventListener("click", () => {
     votes.agree++;
+    updateVotes();
     alert("Thank you for your vote!");
-    saveVotes();
 });
 
 noButton.addEventListener("click", () => {
     votes.disagree++;
+    updateVotes();
     alert("Thank you for your vote!");
-    saveVotes();
 });
 
 // Handle admin login
@@ -50,7 +65,6 @@ loginButton.addEventListener("click", () => {
     if (enteredPassword === password) {
         adminSection.classList.remove("hidden");
         document.getElementById("admin-login").classList.add("hidden");
-        resultsSection.textContent = `Agree: ${votes.agree}, Disagree: ${votes.disagree}`;
     } else {
         alert("Incorrect password.");
     }
