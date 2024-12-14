@@ -2,15 +2,30 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebas
 import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
 // Firebase configuration
+
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: "your-api-key",
-    authDomain: "your-app.firebaseapp.com",
-    databaseURL: "https://your-database.firebaseio.com",
-    projectId: "your-project-id",
-    storageBucket: "your-storage-bucket",
-    messagingSenderId: "your-messaging-sender-id",
-    appId: "your-app-id"
+  apiKey: "AIzaSyCqLjKA9koRQSFR4xMZSPRSGbL2JRFktYo",
+  authDomain: "voting-7a6ad.firebaseapp.com",
+  databaseURL: "https://voting-7a6ad-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "voting-7a6ad",
+  storageBucket: "voting-7a6ad.firebasestorage.app",
+  messagingSenderId: "696254912860",
+  appId: "1:696254912860:web:be7d19ef81cb4c81374999",
+  measurementId: "G-2M61QWDPP0"
 };
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
