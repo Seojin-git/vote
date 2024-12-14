@@ -3,14 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vote</title>
+    <title>Voting Website</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>찬성, 반대</h1>
-    <form action="/vote" method="POST">
-        <button type="submit" name="vote" value="agree">찬성</button>
-        <button type="submit" name="vote" value="disagree">반대</button>
-    </form>
-    <a href="/admin">관리자 로그인</a>
+    <div class="container">
+        <h1>Vote Now</h1>
+        <button id="yes-button">Agree</button>
+        <button id="no-button">Disagree</button>
+
+        <div id="admin-section" class="hidden">
+            <h2>Admin Panel</h2>
+            <p id="results"></p>
+        </div>
+
+        <div id="admin-login">
+            <h2>Admin Login</h2>
+            <input type="password" id="admin-password" placeholder="Enter Admin Password">
+            <button id="login-button">Login</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
+
