@@ -23,9 +23,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const yesButton = document.getElementById("yes-button");
     const noButton = document.getElementById("no-button");
     const loginButton = document.getElementById("login-button");
+    const resetButton = document.getElementById("reset-button");
     const adminPasswordInput = document.getElementById("admin-password");
     const resultsSection = document.getElementById("results");
     const adminSection = document.getElementById("admin-section");
+    const votedMessage = document.getElementById("voted-message");
 
     const password = "05190519";
 
@@ -37,6 +39,16 @@ document.addEventListener("DOMContentLoaded", () => {
         agree: 0,
         disagree: 0
     };
+
+    // Check if the user has already voted
+    const hasVoted = localStorage.getItem("hasVoted");
+
+    if (hasVoted) {
+        // Hide voting buttons and show voted message
+        yesButton.disabled = true;
+        noButton.disabled = true;
+        votedMessage.classList.remove("hidden");
+    }
 
     // Sync votes from Firebase in real-time
     onValue(votesRef, (snapshot) => {
@@ -67,6 +79,12 @@ document.addEventListener("DOMContentLoaded", () => {
         votes.agree++;
         updateVotes();
         alert("Thank you for your vote!");
+        // Set voted flag in localStorage
+        localStorage.setItem("hasVoted", true);
+        // Disable buttons and show message
+        yesButton.disabled = true;
+        noButton.disabled = true;
+        votedMessage.classList.remove("hidden");
     });
 
     noButton.addEventListener("click", () => {
@@ -74,6 +92,12 @@ document.addEventListener("DOMContentLoaded", () => {
         votes.disagree++;
         updateVotes();
         alert("Thank you for your vote!");
+        // Set voted flag in localStorage
+        localStorage.setItem("hasVoted", true);
+        // Disable buttons and show message
+        yesButton.disabled = true;
+        noButton.disabled = true;
+        votedMessage.classList.remove("hidden");
     });
 
     // Handle admin login
@@ -87,5 +111,16 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Incorrect password.");
         }
     });
-});
 
+    // Handle reset button
+    resetButton.addEventListener("click", () => {
+        if (confirm("Are you sure you want to reset the votes?")) {
+            votes = {
+                agree: 0,
+                disagree: 0
+            };
+            update(votesRef);
+            alert("Votes have been reset.");
+        }
+    });
+});
