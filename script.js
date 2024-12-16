@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set, update, onValue } from "firebase/database";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -8,7 +8,7 @@ const firebaseConfig = {
   authDomain: "voting-7a6ad.firebaseapp.com",
   databaseURL: "https://voting-7a6ad-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "voting-7a6ad",
-  storageBucket: "voting-7a6ad.firebasestorage.app",
+  storageBucket: "voting-7a6ad.appspot.com", // 수정된 부분
   messagingSenderId: "696254912860",
   appId: "1:696254912860:web:be7d19ef81cb4c81374999",
   measurementId: "G-2M61QWDPP0"
@@ -41,13 +41,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // Sync votes from Firebase in real-time
     onValue(votesRef, (snapshot) => {
         const data = snapshot.val();
-        votes = data || { agree: 0, disagree: 0 };
+        if (data) {
+            votes = data;
+        } else {
+            // If no data exists, initialize it in Firebase
+            set(votesRef, votes);
+        }
         resultsSection.textContent = `Agree: ${votes.agree}, Disagree: ${votes.disagree}`;
+    }, (error) => {
+        console.error("Error fetching votes:", error);
     });
 
     // Update votes in Firebase
     function updateVotes() {
-        update(votesRef, votes);
+        update(votesRef, votes)
+            .catch((error) => {
+                console.error("Error updating votes:", error);
+                alert("There was an error updating your vote. Please try again.");
+            });
     }
 
     // Handle vote buttons
@@ -77,3 +88,4 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
