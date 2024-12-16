@@ -42,12 +42,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Check if the user has already voted
     const hasVoted = localStorage.getItem("hasVoted");
+    console.log("Has Voted:", hasVoted);
 
     if (hasVoted) {
         // Hide voting buttons and show voted message
         yesButton.disabled = true;
         noButton.disabled = true;
         votedMessage.classList.remove("hidden");
+        console.log("User has already voted.");
     }
 
     // Sync votes from Firebase in real-time
@@ -55,9 +57,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = snapshot.val();
         if (data) {
             votes = data;
+            console.log("Votes updated from Firebase:", votes);
         } else {
             // If no data exists, initialize it in Firebase
-            set(votesRef, votes);
+            set(votesRef, votes)
+                .then(() => {
+                    console.log("Initialized votes in Firebase:", votes);
+                })
+                .catch((error) => {
+                    console.error("Error initializing votes:", error);
+                });
         }
         resultsSection.textContent = `Agree: ${votes.agree}, Disagree: ${votes.disagree}`;
     }, (error) => {
@@ -67,6 +76,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Update votes in Firebase
     function updateVotes() {
         update(votesRef, votes)
+            .then(() => {
+                console.log("Votes updated in Firebase:", votes);
+            })
             .catch((error) => {
                 console.error("Error updating votes:", error);
                 alert("There was an error updating your vote. Please try again.");
@@ -75,12 +87,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Handle vote buttons
     yesButton.addEventListener("click", () => {
-        console.log("Yes button clicked!"); // Debugging log
+        console.log("Yes button clicked!");
         votes.agree++;
         updateVotes();
         alert("Thank you for your vote!");
         // Set voted flag in localStorage
-        localStorage.setItem("hasVoted", true);
+        localStorage.setItem("hasVoted", "true");
         // Disable buttons and show message
         yesButton.disabled = true;
         noButton.disabled = true;
@@ -88,12 +100,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     noButton.addEventListener("click", () => {
-        console.log("No button clicked!"); // Debugging log
+        console.log("No button clicked!");
         votes.disagree++;
         updateVotes();
         alert("Thank you for your vote!");
         // Set voted flag in localStorage
-        localStorage.setItem("hasVoted", true);
+        localStorage.setItem("hasVoted", "true");
         // Disable buttons and show message
         yesButton.disabled = true;
         noButton.disabled = true;
@@ -104,11 +116,12 @@ document.addEventListener("DOMContentLoaded", () => {
     loginButton.addEventListener("click", () => {
         const enteredPassword = adminPasswordInput.value;
         if (enteredPassword === password) {
-            console.log("Admin logged in"); // Debugging log
+            console.log("Admin logged in");
             adminSection.classList.remove("hidden");
             document.getElementById("admin-login").classList.add("hidden");
         } else {
             alert("Incorrect password.");
+            console.log("Incorrect admin password entered.");
         }
     });
 
@@ -119,8 +132,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 agree: 0,
                 disagree: 0
             };
-            update(votesRef);
-            alert("Votes have been reset.");
+            set(votesRef, votes)
+                .then(() => {
+                    console.log("Votes have been reset to:", votes);
+                    alert("Votes have been reset.");
+                })
+                .catch((error) => {
+                    console.error("Error resetting votes:", error);
+                    alert("There was an error resetting the votes. Please try again.");
+                });
         }
     });
 });
