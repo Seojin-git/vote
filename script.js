@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+import { getDatabase, ref, set, update, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // Initialize vote version
-    let currentVoteVersion = 1;
+    let currentVoteVersion = null;
 
     // Function to initialize votes and version if they don't exist
     function initializeDatabase() {
@@ -54,9 +54,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.error("Error initializing votes:", error);
             });
 
-        set(versionRef, currentVoteVersion)
+        set(versionRef, 1)
             .then(() => {
-                console.log("Initialized voteVersion in Firebase:", currentVoteVersion);
+                console.log("Initialized voteVersion in Firebase:", 1);
             })
             .catch((error) => {
                 console.error("Error initializing voteVersion:", error);
@@ -81,14 +81,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // Sync voteVersion from Firebase in real-time
     onValue(versionRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-            currentVoteVersion = data;
+        if (data !== null) {
+            currentVoteVersion = Number(data);
             console.log("voteVersion updated from Firebase:", currentVoteVersion);
             checkVotingStatus();
         } else {
             // If no version exists, initialize it
-            set(versionRef, currentVoteVersion)
+            set(versionRef, 1)
                 .then(() => {
+                    currentVoteVersion = 1;
                     console.log("Initialized voteVersion in Firebase:", currentVoteVersion);
                 })
                 .catch((error) => {
@@ -102,10 +103,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Function to check if user has voted in the current version
     function checkVotingStatus() {
         const votedData = localStorage.getItem("hasVoted");
+        console.log("Checking voting status...");
         if (votedData) {
             try {
                 const votedObj = JSON.parse(votedData);
-                if (votedObj.version === currentVoteVersion) {
+                const storedVersion = Number(votedObj.version);
+                console.log("VotedObj.version:", storedVersion, "currentVoteVersion:", currentVoteVersion);
+                if (storedVersion === currentVoteVersion) {
                     // User has voted in the current version
                     yesButton.disabled = true;
                     noButton.disabled = true;
@@ -121,10 +125,8 @@ document.addEventListener("DOMContentLoaded", () => {
         yesButton.disabled = false;
         noButton.disabled = false;
         votedMessage.classList.add("hidden");
+        console.log("User has not voted in the current version.");
     }
-
-    // Initial check on page load
-    checkVotingStatus();
 
     // Update votes in Firebase
     function updateVotes() {
@@ -181,26 +183,32 @@ document.addEventListener("DOMContentLoaded", () => {
     // Handle reset button
     resetButton.addEventListener("click", () => {
         if (confirm("Are you sure you want to reset the votes?")) {
-            // Increment the vote version
-            currentVoteVersion++;
-            set(versionRef, currentVoteVersion)
-                .then(() => {
-                    console.log("voteVersion has been incremented to:", currentVoteVersion);
-                    // Reset votes
-                    votes = {
-                        agree: 0,
-                        disagree: 0
-                    };
-                    return set(votesRef, votes);
-                })
-                .then(() => {
-                    console.log("Votes have been reset to:", votes);
-                    alert("Votes have been reset. Users can vote again.");
-                })
-                .catch((error) => {
-                    console.error("Error resetting votes:", error);
-                    alert("There was an error resetting the votes. Please try again.");
-                });
+            // Use transaction to increment voteVersion atomically
+            runTransaction(versionRef, (currentData) => {
+                if (currentData === null) {
+                    return 1;
+                } else {
+                    return currentData + 1;
+                }
+            })
+            .then((result) => {
+                if (!result.committed) {
+                    console.log("Transaction not committed");
+                    return;
+                }
+                // 'onValue' listener will handle updating 'currentVoteVersion' and calling 'checkVotingStatus()'
+                console.log("voteVersion has been incremented to:", result.snapshot.val());
+                // Reset votes
+                return set(votesRef, { agree: 0, disagree: 0 });
+            })
+            .then(() => {
+                console.log("Votes have been reset.");
+                alert("Votes have been reset. Users can vote again.");
+            })
+            .catch((error) => {
+                console.error("Error resetting votes:", error);
+                alert("There was an error resetting the votes. Please try again.");
+            });
         }
     });
 });
