@@ -31,8 +31,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const password = "05190519";
 
-    // Reference to the votes in the database
+    // References to the votes and version in the database
     const votesRef = ref(db, "votes");
+    const versionRef = ref(db, "voteVersion");
 
     // Initialize votes
     let votes = {
@@ -40,16 +41,26 @@ document.addEventListener("DOMContentLoaded", () => {
         disagree: 0
     };
 
-    // Check if the user has already voted
-    const hasVoted = localStorage.getItem("hasVoted");
-    console.log("Has Voted:", hasVoted);
+    // Initialize vote version
+    let currentVoteVersion = 1;
 
-    if (hasVoted) {
-        // Hide voting buttons and show voted message
-        yesButton.disabled = true;
-        noButton.disabled = true;
-        votedMessage.classList.remove("hidden");
-        console.log("User has already voted.");
+    // Function to initialize votes and version if they don't exist
+    function initializeDatabase() {
+        set(votesRef, votes)
+            .then(() => {
+                console.log("Initialized votes in Firebase:", votes);
+            })
+            .catch((error) => {
+                console.error("Error initializing votes:", error);
+            });
+
+        set(versionRef, currentVoteVersion)
+            .then(() => {
+                console.log("Initialized voteVersion in Firebase:", currentVoteVersion);
+            })
+            .catch((error) => {
+                console.error("Error initializing voteVersion:", error);
+            });
     }
 
     // Sync votes from Firebase in real-time
@@ -60,18 +71,60 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Votes updated from Firebase:", votes);
         } else {
             // If no data exists, initialize it in Firebase
-            set(votesRef, votes)
-                .then(() => {
-                    console.log("Initialized votes in Firebase:", votes);
-                })
-                .catch((error) => {
-                    console.error("Error initializing votes:", error);
-                });
+            initializeDatabase();
         }
         resultsSection.textContent = `Agree: ${votes.agree}, Disagree: ${votes.disagree}`;
     }, (error) => {
         console.error("Error fetching votes:", error);
     });
+
+    // Sync voteVersion from Firebase in real-time
+    onValue(versionRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            currentVoteVersion = data;
+            console.log("voteVersion updated from Firebase:", currentVoteVersion);
+            checkVotingStatus();
+        } else {
+            // If no version exists, initialize it
+            set(versionRef, currentVoteVersion)
+                .then(() => {
+                    console.log("Initialized voteVersion in Firebase:", currentVoteVersion);
+                })
+                .catch((error) => {
+                    console.error("Error initializing voteVersion:", error);
+                });
+        }
+    }, (error) => {
+        console.error("Error fetching voteVersion:", error);
+    });
+
+    // Function to check if user has voted in the current version
+    function checkVotingStatus() {
+        const votedData = localStorage.getItem("hasVoted");
+        if (votedData) {
+            try {
+                const votedObj = JSON.parse(votedData);
+                if (votedObj.version === currentVoteVersion) {
+                    // User has voted in the current version
+                    yesButton.disabled = true;
+                    noButton.disabled = true;
+                    votedMessage.classList.remove("hidden");
+                    console.log("User has already voted in the current version.");
+                    return;
+                }
+            } catch (e) {
+                console.error("Error parsing hasVoted from localStorage:", e);
+            }
+        }
+        // User has not voted in the current version
+        yesButton.disabled = false;
+        noButton.disabled = false;
+        votedMessage.classList.add("hidden");
+    }
+
+    // Initial check on page load
+    checkVotingStatus();
 
     // Update votes in Firebase
     function updateVotes() {
@@ -91,8 +144,8 @@ document.addEventListener("DOMContentLoaded", () => {
         votes.agree++;
         updateVotes();
         alert("Thank you for your vote!");
-        // Set voted flag in localStorage
-        localStorage.setItem("hasVoted", "true");
+        // Set voted flag in localStorage with current version
+        localStorage.setItem("hasVoted", JSON.stringify({ version: currentVoteVersion }));
         // Disable buttons and show message
         yesButton.disabled = true;
         noButton.disabled = true;
@@ -104,8 +157,8 @@ document.addEventListener("DOMContentLoaded", () => {
         votes.disagree++;
         updateVotes();
         alert("Thank you for your vote!");
-        // Set voted flag in localStorage
-        localStorage.setItem("hasVoted", "true");
+        // Set voted flag in localStorage with current version
+        localStorage.setItem("hasVoted", JSON.stringify({ version: currentVoteVersion }));
         // Disable buttons and show message
         yesButton.disabled = true;
         noButton.disabled = true;
@@ -128,14 +181,21 @@ document.addEventListener("DOMContentLoaded", () => {
     // Handle reset button
     resetButton.addEventListener("click", () => {
         if (confirm("Are you sure you want to reset the votes?")) {
-            votes = {
-                agree: 0,
-                disagree: 0
-            };
-            set(votesRef, votes)
+            // Increment the vote version
+            currentVoteVersion++;
+            set(versionRef, currentVoteVersion)
+                .then(() => {
+                    console.log("voteVersion has been incremented to:", currentVoteVersion);
+                    // Reset votes
+                    votes = {
+                        agree: 0,
+                        disagree: 0
+                    };
+                    return set(votesRef, votes);
+                })
                 .then(() => {
                     console.log("Votes have been reset to:", votes);
-                    alert("Votes have been reset.");
+                    alert("Votes have been reset. Users can vote again.");
                 })
                 .catch((error) => {
                     console.error("Error resetting votes:", error);
