@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // If no data exists, initialize it in Firebase
             initializeDatabase();
         }
-        resultsSection.textContent = `Agree: ${votes.agree}, Disagree: ${votes.disagree}`;
+        resultsSection.textContent = `이성민: ${votes.agree}, 안은혜: ${votes.disagree}`;
     }, (error) => {
         console.error("Error fetching votes:", error);
     });
